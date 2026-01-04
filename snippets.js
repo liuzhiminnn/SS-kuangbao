@@ -56,19 +56,12 @@ const parseAddress = (data, offset) => {
   return { host: '', end: 0, ok: false };
 };
 
-// TCP连接器 - 10ms竞态优化
-const connectWithTimeout = async (host, port, timeout) => {
-  const sock = connect({ hostname: host, port });
-  await Promise.race([
-    sock.opened,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
-  ]);
-  return sock;
-};
-
+// TCP连接器 - 带回退
 const connectTCP = async (host, port) => {
   try {
-    return await connectWithTimeout(host, port, 10);
+    const sock = connect({ hostname: host, port });
+    await sock.opened;
+    return sock;
   } catch {
     const sock = connect({ hostname: PROXY_HOST, port: PROXY_PORT });
     await sock.opened;
